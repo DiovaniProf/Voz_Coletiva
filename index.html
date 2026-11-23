@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#07172e" />
+  <meta name="description" content="Apresentacoes participativas para encontros e formacoes: enquetes, nuvem de palavras, quiz e respostas abertas." />
+  <title>PARTICIPA • Ao vivo</title>
+  <link rel="stylesheet" href="/style.css" />
+  <script src="/socket.io/socket.io.js" defer></script>
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div class="decor decor-a"></div><div class="decor decor-b"></div>
+  <header class="site-header">
+    <div class="brand"><span class="brand-icon">✳</span><span><strong>PARTICIPA</strong><small>AO VIVO · EDUCAÇÃO</small></span></div>
+    <div class="header-right"><span id="connection" class="connection">● Conectando</span><span class="top-tag">Apresentação interativa</span></div>
+  </header>
+
+  <main>
+    <section id="welcome" class="welcome">
+      <div class="hero-copy">
+        <span class="eyebrow">A EXPERIÊNCIA COMEÇA COM UMA PERGUNTA</span>
+        <h1>Da plateia à <em>participação.</em></h1>
+        <p>Transforme sua aula ou formação em uma conversa coletiva. Enquetes, nuvem de palavras, quizzes e perguntas abertas — tudo no mesmo ambiente.</p>
+        <div class="hero-pills"><span>◉ Respostas ao vivo</span><span>◇ Sem cadastro dos alunos</span><span>▤ Relatório exportável</span></div>
+        <div class="mini-example" aria-hidden="true"><span>Quais palavras representam uma boa aula?</span><div class="example-words"><b>DIÁLOGO</b><strong>Respeito</strong><i>Criatividade</i><em>Escuta</em><b>Participação</b></div></div>
+      </div>
+      <div class="entry-card">
+        <div class="tabs"><button id="tabHost" class="active" type="button">Sou apresentador</button><button id="tabGuest" type="button">Sou participante</button></div>
+        <form id="hostForm" class="entry-form">
+          <h2>Iniciar experiência</h2><p>Crie sua sessão para projetar perguntas e receber contribuições.</p>
+          <label for="sessionTitle">Título da sessão</label><input id="sessionTitle" maxlength="90" value="Relações interpessoais na escola" required />
+          <label for="moderatorPin">PIN do apresentador</label><input id="moderatorPin" type="password" inputmode="numeric" placeholder="Informe o PIN" autocomplete="off" required />
+          <button class="primary full" type="submit">Criar sala <span>→</span></button>
+          <div class="restore"><span>Já tem uma sessão aberta?</span><input id="restoreCode" placeholder="Código de 6 dígitos" inputmode="numeric" maxlength="6" /><button id="restoreBtn" type="button">Reabrir</button></div>
+        </form>
+        <form id="guestForm" class="entry-form hidden">
+          <h2>Entre na conversa</h2><p>Use o código da sessão que o apresentador compartilhou.</p>
+          <label for="guestCode">Código de acesso</label><input id="guestCode" class="access-code" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" placeholder="000000" required />
+          <button type="submit" class="primary full">Participar agora <span>→</span></button>
+          <small>Nenhum e-mail ou senha é necessário.</small>
+        </form>
+      </div>
+    </section>
+
+    <section id="host" class="host-layout hidden">
+      <aside class="sidebar">
+        <div class="sidebar-head"><div><span class="eyebrow">PAINEL DO APRESENTADOR</span><h2 id="hostTitle">Minha sessão</h2></div><button id="backHomeHost" title="Sair do painel" class="icon-button" type="button">↗</button></div>
+        <div class="session-box"><span>CÓDIGO DA SALA</span><strong id="roomCode">------</strong><div class="session-actions"><button id="copyCode" type="button">Copiar link</button><button id="showQR" type="button">Ver QR Code</button></div></div>
+        <div class="sidebar-subhead"><strong>Atividades</strong><span id="slidesCount">0</span></div>
+        <div id="slideList" class="slide-list"><p class="muted">Crie sua primeira interação.</p></div>
+        <button id="toggleCreator" class="outline full add-button" type="button">＋ Criar nova atividade</button>
+        <div class="side-footer"><span class="status-dot"></span> <strong id="attendeeCount">0</strong> participantes conectados</div>
+      </aside>
+      <div class="host-main">
+        <div class="toolbar"><div><span class="eyebrow">TELA DE APRESENTAÇÃO</span><h2 id="stageHeadline">Bem-vindos!</h2></div><div class="toolbar-buttons"><button id="openGuest" type="button">↗ Testar como aluno</button><button id="fullscreen" type="button">⛶ Tela cheia</button><button id="exportCSV" class="light-action" type="button">↓ CSV</button><button id="exportJSON" class="light-action" type="button">↓ JSON</button></div></div>
+        <div id="stage" class="stage"><div id="stageContent" class="stage-inner"><div class="stage-empty"><span class="big-symbol">✳</span><h2>Sua sala está aberta.</h2><p>Crie uma atividade para começar a interação com os participantes.</p></div></div><div class="stage-bottom"><span><i class="live-dot"></i> PARTICIPA · AO VIVO</span><span id="stageCount">0 contribuições</span></div></div>
+        <div class="stage-controls"><button id="lockSlide" type="button">🔒 Bloquear respostas</button><button id="revealQuiz" type="button" class="hidden">✓ Revelar resposta</button><button id="clearSlide" type="button">↺ Limpar respostas</button><button id="deleteSlide" type="button" class="danger">Excluir atividade</button></div>
+      </div>
+      <aside id="creator" class="creator hidden">
+        <div class="creator-head"><div><span class="eyebrow">EDITOR</span><h2>Nova atividade</h2></div><button id="closeCreator" class="icon-button" type="button">×</button></div>
+        <form id="createForm">
+          <label for="questionType">Tipo de interação</label>
+          <select id="questionType"><option value="cloud">☁ Nuvem de palavras</option><option value="poll">▥ Enquete</option><option value="quiz">✦ Quiz</option><option value="open">✎ Resposta aberta</option></select>
+          <label for="questionText">Pergunta norteadora</label><textarea id="questionText" rows="4" maxlength="170" placeholder="O que é essencial para uma convivência respeitosa?" required></textarea>
+          <div id="optionsFields" class="hidden"><label for="answerOptions">Alternativas (uma por linha)</label><textarea id="answerOptions" rows="6" placeholder="Confiar nas pessoas&#10;Saber ouvir&#10;Respeitar diferenças&#10;Cooperar nas decisões"></textarea><small>De 2 a 6 alternativas.</small></div>
+          <div id="quizFields" class="hidden"><label for="correctIndex">Alternativa correta</label><select id="correctIndex"></select></div>
+          <div class="editor-tip" id="typeTip">Cada participante pode enviar até três palavras. As mais repetidas ganham destaque.</div>
+          <button class="primary full" type="submit">Adicionar à apresentação <span>＋</span></button>
+        </form>
+        <p class="editor-note">As respostas são coletadas nesta sessão. Você pode selecionar a atividade ativa na lista.</p>
+      </aside>
+    </section>
+
+    <section id="participant" class="participant-view hidden">
+      <div class="participant-card">
+        <div class="part-top"><div><span class="eyebrow">VOCÊ FAZ PARTE DA CONVERSA</span><h2 id="partTitle">Sessão</h2></div><span id="partRoom" class="pill-code">------</span></div>
+        <div id="participantBody" class="participant-body"><div class="waiting"><div class="waiting-art">✳</div><h2>Você está na sala!</h2><p>Aguarde o apresentador iniciar a atividade.</p></div></div>
+        <div class="part-foot"><span id="partCount">0 participantes online</span><button id="leaveGuest" type="button">Sair da sessão</button></div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="qrDialog" class="qr-dialog"><form method="dialog"><button class="close-qr" aria-label="Fechar" title="Fechar">×</button></form><h2>Entre pelo celular</h2><p>Aponte a câmera para o QR Code ou use o código da sala.</p><img id="qrImage" width="270" height="270" alt="QR Code de entrada na sessão" /><strong id="qrCodeText">000000</strong><button id="qrCopyLink" class="primary full" type="button">Copiar link dos participantes</button></dialog>
+</body>
+</html>
